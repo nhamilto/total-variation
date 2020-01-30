@@ -26,9 +26,7 @@ import numpy as np
 # import scipy as sp
 import pandas as pd
 
-# sys.path.append('../scripts/')
-import utils
-import Lillgrund_funcs as lf
+import total_var_functions as TV
 
 ###########  Main stuff
 today = datetime.date.today().strftime('%Y%m%d')
@@ -50,24 +48,30 @@ metdfnorm = (metdf - metdf.mean()) / (metdf.std())
 
 ##### calculate total variation in a sliding window
 # NO objective function => quiescent conditions
-slidedf = lf.total_variation(metdfnorm, blocksize=120, window='slide')
+slidedf = TV.total_variation(metdfnorm, blocksize=120, window='slide')
 slidedf.to_csv(os.path.join(datadir, 'tvar_quiescent_{}.csv'.format(today)))
 
 #### calculate total variation in a sliding window
 # LINEAR objective function => wind speed ramp
-tvar_linear = lf.total_variation(
-    metdfnorm, blocksize=120, detrend='linear', column='wspd')
+tvar_linear = TV.total_variation(metdfnorm,
+                                 blocksize=120,
+                                 detrend='linear',
+                                 column='wspd')
 tvar_linear.to_csv(os.path.join(datadir, 'tvar_linear_{}.csv'.format(today)))
 
 ##### calculate total variation in a sliding window
 # LINEAR objective function => wind speed wave
-tvar_wave = lf.total_variation(
-    metdfnorm, blocksize=120, detrend='sine', column='wspd')
+tvar_wave = TV.total_variation(metdfnorm,
+                               blocksize=120,
+                               detrend='sine',
+                               column='wspd')
 tvar_wave.to_csv(os.path.join(datadir, 'tvar_wave_{}.csv'.format(today)))
 
 # Testing the inverse tangent fit fixing the phase to len(x)/2
 ##### calculate total variation in a sliding window
 # LINEAR objective function => wind direction change
-tvar_dchg = lf.total_variation(
-    metdfnorm, blocksize=120, detrend='inverse', column='wdir')
+tvar_dchg = TV.total_variation(metdfnorm,
+                               blocksize=120,
+                               detrend='inverse',
+                               column='wdir')
 tvar_dchg.to_csv(os.path.join(datadir, 'tvar_dchg_{}.csv'.format(today)))
