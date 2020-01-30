@@ -29,35 +29,6 @@ def standardize_data(data, axis=0):
     return dnorm
 
 
-# #######################################
-# def total_variation(data):
-#     '''
-#     calculate the total variation of a data as the vector norm of the eigenvalues of the covariance matrix of the input data.
-
-#     Parameters
-#     ----------
-#     data : pd.dataframe, np.ndarray
-#         data
-
-#     Returns
-#     -------
-#     tvar: float
-#         total variation of the input data
-#     V: np.array
-#         eigenvalues of the input data's covariance matrix
-#     S: np.array
-#         eigenvectors of the input data's covariance matrix
-
-#     '''
-#     if 'pandas' in str(type(data)):
-#         data = data.values
-#     cov = np.cov(data.T)
-#     V, S = np.linalg.eig(cov)
-#     dpro = np.prod(V)
-
-#     return tvar
-
-
 #######################################
 def covdet(data):
     '''
@@ -201,13 +172,19 @@ def parse_init_fitvals(detrend, ydat):
 
     '''
     if detrend is not None:
+
+        # initial fit values for linear trend
         if detrend.lower() in 'linear':
             p0 = [(ydat[-1] - ydat[0]) / len(ydat), ydat.mean()]
+
+        # initial fit values for sinusoidal trend
         if detrend.lower() in 'sinusoidal' or detrend.lower() in 'sine':
             p0 = [
-                1, 1 / (np.pi * 2 * np.abs(np.argmax(ydat) - np.argmin(ydat))),
+                1, (np.pi * 2 * np.abs(np.argmax(ydat) - np.argmin(ydat))),
                 ydat.mean(), 0
             ]
+
+        # initial fit values for inverse tangent trend
         if detrend.lower() in 'inverse tangent':
             p0 = [1, 1, 1, len(ydat) / 2]
     return p0
@@ -254,127 +231,3 @@ def find_outliers(data, threshold=3, searchtype=None):
         clean_data = np.delete(data, outlier_index, axis=0)
 
     return clean_data, outliers, outlier_index
-
-
-# #######################################
-# def total_variation(data,
-#                     blocksize=60,
-#                     detrend=None,
-#                     column=None,
-#                     window='slide',
-#                     fitcurve=None,
-#                     normalize_method='normal',
-#                     metric='tvar'):
-#     '''
-#     Calculate the total variation of a dataset of block of data.
-
-#     Parameters
-#     ----------
-#     data: df.DataFrame, np.ndarray
-#         input data of format (timeseries x datachannels)
-
-#     blocksize: int
-#         size of blocks for which to calculate total variation
-#         blocksize reflects the duration of each period in minutes
-
-#     detrend: None, list
-#         list of variables to detrend (linear)
-
-#     Returns
-#     --------
-#     totalvar: df.Series
-#         Series of the total variation for each time period.
-#     '''
-
-#     if window == 'slide':
-#         timeind = data.index
-#     elif window == 'block':
-#         # make new time index (hourly)
-#         timeind = pd.DatetimeIndex(start=data.index[0],
-#                                    freq='{}T'.format(blocksize),
-#                                    end=data.index[-1])
-
-#     nblocks = len(timeind)
-
-#     # allocate space for totalvar
-#     totalvar = np.zeros(nblocks)
-
-#     # if detrending data, parse objective functino, and the number of required arguments
-#     if detrend is not None:
-#         fitfunc, param_names = parse_fitfunc(detrend)
-#         param_names.append('residual')
-#         tmp = inspect.getfullargspec(fitfunc)
-#         nargs = len(tmp.args)
-#         fits = np.zeros((nblocks, nargs))  # slope, offset, residual
-#         x = np.arange(blocksize)
-
-#     nskip = 0
-#     timedelay = pd.Timedelta('{}m'.format(blocksize - 1))
-
-#     # loop over data blocks
-#     for ii in range(nblocks - 1):
-
-#         startind = timeind[ii]
-#         endind = startind + timedelay
-
-#         block = data[startind:endind].dropna(how='any').copy()
-#         # block = data.iloc[startind:startind + blocksize].copy()
-
-#         if (len(block) < blocksize) | (any(block.std() == 0)) | (
-#             (np.abs(block.wdir.diff()).max() > 60)):
-#             nskip += 1
-#             continue
-
-#         if detrend is not None:
-#             p0 = parse_init_fitvals(detrend, block[column].values)
-
-#             # try to make a good fit. Sometimes it just doesn't go well...
-#             try:
-#                 fittest = sciop.curve_fit(fitfunc, x, block[column], p0)
-#                 fitparams, _ = fittest
-#                 fitcurve = fitfunc(x, *fitparams)
-#                 residual = np.linalg.norm(block[column] -
-#                                           fitfunc(x, *fitparams))**2
-#             except:
-#                 # print('excepted')
-#                 fitparams = p0
-#                 fitcurve = fitfunc(x, *fitparams)
-#                 residual = np.nan
-#                 # fits[ii, :] = np.nan
-#                 # continue
-
-#             block[column] -= (fitcurve + block[column].mean())
-#             fits[ii, :-1] = fitparams
-#             fits[ii, -1] = np.linalg.norm(residual)
-
-#         # normalize data
-#         if normalize_method is 'normal':
-#             block = normalize_data(block)
-#         elif normalize_method is 'standard':
-#             block = standardize_data(block)
-
-#         if metric is 'tvar':
-#             # total variation of the chunk
-#             totalvar[ii], V, _ = pca_var(block)
-#         elif metric is 'dpro':
-#             totalvar[ii] = pca_dpro(block)
-#         elif metric is 'covnorm':
-#             totalvar[ii] = covnorm(block)
-#         elif metric is 'covdet':
-#             totalvar[ii] = covdet(block)
-
-#     # make dataframe for total variation
-#     totalvar = pd.DataFrame(data=totalvar, index=timeind, columns=['totalvar'])
-
-#     if detrend is not None:
-
-#         fitcols = {'_'.join([column, x]): np.array([]) for x in param_names}
-#         fits = pd.DataFrame(index=totalvar.index, data=fits, columns=fitcols)
-#         totalvar = totalvar.join(fits)
-
-#     # replace 0.0 with np.nan
-#     totalvar.replace(0, np.nan, inplace=True)
-#     # Drop all nan values
-#     totalvar.dropna(inplace=True, how='any')
-
-#     return totalvar
