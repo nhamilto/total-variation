@@ -17,7 +17,7 @@ AUTHOR
    Nicholas Hamilton
    nicholas.hamilton@nrel.gov
 
-   Date: 20190319
+   Date: 30 January 2020
 """
 
 import sys, os, traceback, optparse
@@ -35,16 +35,13 @@ figpath = os.path.abspath('../figs/')
 datadir = os.path.abspath('../../data')
 
 #### read pre-processed data.
-metdf = pd.read_csv(os.path.join(datadir, 'metdata_2009.csv'))
-metdf.dropna(how='any', inplace=True)
-metdf.index = pd.DatetimeIndex(metdf['time'])
-metdf.drop(labels=['time'], axis=1, inplace=True)
-metdf.ti *= 100
-# keep a normalized version around
-metdfnorm = (metdf - metdf.mean()) / (metdf.std())
+metdf = pd.read_csv('metdata1T.csv')
 
-#### Limit metdf to a subset for testing
-# metdfnorm = metdfnorm.iloc[0:12000]
+# metdf = pd.read_csv('../../../data/metdata_2009.csv')
+metdf.dropna(how='any', inplace=True)
+metdf.index = pd.DatetimeIndex(metdf['Unnamed: 0'])
+metdf.drop(labels=['Unnamed: 0'], axis=1, inplace=True)
+metdf.index.name = 'time'
 
 ##### calculate total variation in a sliding window
 # NO objective function => quiescent conditions
